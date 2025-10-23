@@ -1,4 +1,4 @@
-import { VehicleType } from "../Constants.js";
+import { VehicleType, PaymentStatus } from "../Constants.js";
 import { Payment } from "./Payment.js";
 
 export class ParkingTicket {
@@ -6,8 +6,32 @@ export class ParkingTicket {
   entryTime: Date;
   exitTime?: Date;
   amount?: number;
-  status: string;
+  status: PaymentStatus;
   payment?: Payment;
+  
+  constructor(ticketNo: number, entryTime: Date, status?: PaymentStatus) {
+    this.ticketNo = ticketNo;
+    this.entryTime = entryTime;
+    this.status = status ? status : PaymentStatus.Pending;
+  }
+
+  update(exitTime?: Date, amount?: number, status?: PaymentStatus, payment?: Payment) {
+    if (exitTime) {
+      this.entryTime = exitTime;
+    }
+
+    if (amount) {
+      this.amount = amount;
+    }
+
+    if (status) {
+      this.status = status;
+    }
+
+    if (payment) {
+      this.payment = payment;
+    }
+  }
 }
 
 export class Vehicle {
@@ -19,3 +43,5 @@ export class Vehicle {
     this.type = type;
   }
 }
+
+
