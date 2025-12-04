@@ -36,12 +36,12 @@ class DisjointSetSize:
             self.parent[node] = self.find_parent(self.parent[node])
         return self.parent[node]
 
-    def union_by_rank(self, u, v):
+    def union_by_size(self, u, v):
         pu = self.find_parent(u)
         pv = self.find_parent(v)
 
         if pu == pv:
-            return
+            return False
 
         # Attach smaller size tree under bigger size tree
         if self.size[pu] < self.size[pv]:
@@ -55,3 +55,23 @@ class DisjointSetSize:
             self.parent[pv] = pu
             self.size[pu] += self.size[pv]
 
+        return True
+
+
+def kruskal(n, edges):
+    edges.sort(key=lambda x: x[2])
+
+    dsu = DisjointSetSize(n)
+    mst = []
+    total_cost = 0
+
+    for u, v, w in edges:
+        if dsu.union_by_size(u, v):  # Only add if it doesn't form a cycle
+            mst.append((u, v, w))
+            total_cost += w
+
+            # Stop when MST has n-1 edges
+            if len(mst) == n - 1:
+                break
+
+    return mst, total_cost
