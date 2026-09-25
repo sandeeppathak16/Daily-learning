@@ -17,111 +17,121 @@
 # | 6       | Value of register C    |
 # | 7       | Invalid (won’t appear) |
 
-
 import re
-from collections import deque
 
-with open("17.txt") as f:
-    lines = f.readlines()
+def parse_input(filename):
+    with open(filename) as f:
+        text = f.read().strip()
 
-register = {
-    'a': 0,
-    'b': 0,
-    'c': 0,
-}
+    regs, prog = text.split("\n\n")
 
-key = 'a'
-program = []
-program_started = False
+    registers = {}
+    for line in regs.splitlines():
+        name, value = line.split(": ")
+        registers[name[-1].lower()] = int(value)
 
-for line in lines:
-    line = line.strip()
+    program = list(map(int, re.findall(r"\d+", prog)))
 
-    if not line:
-        program_started = True
-        continue
-
-    if not program_started:
-        register[key] = int(re.findall(r"\d+", line)[0])
-        key = chr(ord(key) + 1)
-    else:
-        program.extend(list(map(int, re.findall(r"-?\d+", line))))
+    return registers, program
 
 
-def run_vm(program, A):
-    reg = {'a': A, 'b': 0, 'c': 0}
+def run_vm(program, A, B=0, C=0):
+    reg = {
+        "a": A,
+        "b": B,
+        "c": C,
+    }
+
     ip = 0
     output = []
 
-    while ip < len(program):
+    def combo(operand):
+        if 0 <= operand <= 3:
+            return operand
+        if operand == 4:
+            return reg["a"]
+        if operand == 5:
+            return reg["b"]
+        if operand == 6:
+            return reg["c"]
+        raise ValueError("Invalid combo operand")
+
+    while ip + 1 < len(program):
         opcode = program[ip]
         operand = program[ip + 1]
-
-        if operand <= 3:
-            combo = operand
-        elif operand == 4:
-            combo = reg['a']
-        elif operand == 5:
-            combo = reg['b']
-        elif operand == 6:
-            combo = reg['c']
-        else:
-            raise ValueError("Invalid operand")
 
         jumped = False
 
         if opcode == 0:      # adv
-            reg['a'] //= (2 ** combo)
+            reg["a"] //= (1 << combo(operand))
+
         elif opcode == 1:    # bxl
-            reg['b'] ^= operand
+            reg["b"] ^= operand
+
         elif opcode == 2:    # bst
-            reg['b'] = combo % 8
+            reg["b"] = combo(operand) % 8
+
         elif opcode == 3:    # jnz
-            if reg['a'] != 0:
+            if reg["a"] != 0:
                 ip = operand
                 jumped = True
+
         elif opcode == 4:    # bxc
-            reg['b'] ^= reg['c']
+            reg["b"] ^= reg["c"]
+
         elif opcode == 5:    # out
-            output.append(combo % 8)
+            output.append(combo(operand) % 8)
+
         elif opcode == 6:    # bdv
-            reg['b'] = reg['a'] // (2 ** combo)
+            reg["b"] = reg["a"] // (1 << combo(operand))
+
         elif opcode == 7:    # cdv
-            reg['c'] = reg['a'] // (2 ** combo)
+            reg["c"] = reg["a"] // (1 << combo(operand))
+
+        else:
+            raise ValueError(f"Unknown opcode {opcode}")
 
         if not jumped:
             ip += 2
 
     return output
 
+
 def find_minimum_A(program):
-    target = program
-    queue = deque()
+    candidates = [0]
 
-    # start with smallest positive A digits
-    for d in range(1, 8):
-        queue.append(d)
+    for needed_len in range(1, len(program) + 1):
+        next_candidates = []
 
-    while queue:
-        a = queue.popleft()
-        out = run_vm(program, a)
+        for prefix in candidates:
+            for digit in range(8):
+                candidate = (prefix << 3) | digit
 
-        # prune: output must match program prefix
-        if out != target[:len(out)]:
-            continue
+                out = run_vm(program, candidate)
 
-        # success
-        if out == target:
-            return a
+                if out == program[-needed_len:]:
+                    next_candidates.append(candidate)
 
-        # expand search (append base-8 digit)
-        for d in range(8):
-            queue.append((a << 3) | d)
+        candidates = next_candidates
 
-    raise RuntimeError("No solution found")
+    return min(
+        a
+        for a in candidates
+        if run_vm(program, a) == program
+    )
 
 
+def solve(filename="17.txt"):
+    registers, program = parse_input(filename)
 
-# program = [2,4,1,3,7,5,0,3,1,5,4,1,5,5,3,0]
-answer = find_minimum_A(program)
-print(answer)
+    part1_output = run_vm(
+        program,
+        registers["a"],
+        registers["b"],
+        registers["c"]
+    )
+
+    part1 = ",".join(map(str, part1_output))
+    part2 = find_minimum_A(program)
+
+    return part1, part2
