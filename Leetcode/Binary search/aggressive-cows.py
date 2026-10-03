@@ -4,9 +4,32 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from testcase import run_tests
 
 
-def aggressive_cows(stalls, k):
-    
+def aggressive_cows(nums, k):
+    nums.sort()
 
+    l = 1
+    r = nums[-1] - nums[0]
+
+    def can_place(distance):
+        cows = 1
+        last = nums[0]
+
+        for num in nums[1:]:
+            if num - last >= distance:
+                cows += 1
+                last = num
+
+        return cows >= k
+
+    while l <= r:
+        m = (l + r) // 2
+
+        if can_place(m):
+            l = m + 1
+        else:
+            r = m - 1
+
+    return r
 
 test_cases = [
     # Basic examples

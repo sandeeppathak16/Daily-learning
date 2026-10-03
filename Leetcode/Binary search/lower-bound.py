@@ -6,19 +6,20 @@ from testcase import run_tests
 
 def lower_bound(nums, target):
     l = 0
-    r = len(nums)
+    r = len(nums) - 1
+    ans = len(nums)
 
-    while l < r:
+    while l <= r:
         m = (l + r) // 2
 
-        if nums[m] < target:
-            l = m + 1
+        if nums[m] >= target:
+            ans = m
+            r = m - 1
         else:
-            r = m
+            l = m + 1
 
-    return l 
-            
-
+    return ans
+        
 
 test_cases = [
     (([1, 2, 5, 7, 10], 5), 2),     # exact match
